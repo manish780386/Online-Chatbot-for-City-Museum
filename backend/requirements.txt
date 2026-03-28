@@ -1,0 +1,13 @@
+django==4.2.11
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+
+python-dotenv==1.0.1
+Pillow
+qrcode==7.4.2
+razorpay==1.4.1
+celery==5.3.6
+redis==5.0.1
+twilio==8.13.0
+django-axes==6.4.0
