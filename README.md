@@ -9,6 +9,8 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 ---
+<img width="1897" height="876" alt="image" src="https://github.com/user-attachments/assets/dd84cf17-26fc-4206-87b7-865fd9d2f091" />
+
 
 ## 📋 Table of Contents
 
@@ -374,11 +376,13 @@ django-filter==23.3
 | Name | Role |
 |------|------|
 | [Manish Dange] | Full Stack Developer |
+| [Naman Jain] | Full Stack Developer |
+| [Harsh Shukla] | Full Stack Developer |
+| [Gaurav Upadhyay] | Full Stack Developer |
 
-
-**Mentor:** [Mentor Name]  
-**Institution:** [College Name]  
-**Year:** 2024-25
+**Mentor:** [Vishwas Dixit]  
+**Institution:** [SVVV, Indore]  
+**Year:** 2025-2026
 
 ---
 
