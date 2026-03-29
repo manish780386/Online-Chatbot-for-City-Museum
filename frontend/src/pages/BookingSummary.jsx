@@ -8,63 +8,68 @@ import { openRazorpayCheckout } from '../services/razorpay'
 import toast from 'react-hot-toast'
 
 export default function BookingSummary() {
-  const [loading,     setLoading]     = useState(false)
-  const [coupon,      setCoupon]      = useState('')
-  const [discount,    setDiscount]    = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [coupon, setCoupon] = useState('')
+  const [discount, setDiscount] = useState(0)
   const [bookingInfo, setBookingInfo] = useState(null)
-  const [showId,      setShowId]      = useState(null)
-  const navigate                      = useNavigate()
+  const [showId, setShowId] = useState(null)
 
-  // ── localStorage se chatbot data lo ──────────────────────────────
+  const navigate = useNavigate()
+
+  // ── Load booking from localStorage ─────────────────────
   useEffect(() => {
     const saved = localStorage.getItem('pendingBooking')
+
     if (saved) {
-      const data = JSON.parse(saved)
-      setBookingInfo(data)
+      setBookingInfo(JSON.parse(saved))
     } else {
-      // Koi data nahi — home pe bhejo
-      toast.error('No booking found. Please start from chatbot.')
+      toast.error('No booking found.')
       navigate('/')
     }
   }, [])
 
-  // ── Show ID fetch karo category se ───────────────────────────────
+  // ── Fetch showId from backend ──────────────────────────
   useEffect(() => {
     if (!bookingInfo?.categoryKey) return
+
     showsAPI.getAll({ category: bookingInfo.categoryKey })
       .then(res => {
         const shows = res.data.results || res.data
+
         if (shows.length > 0) {
           setShowId(shows[0].id)
         } else {
-          toast.error('Show not available. Please try another date.')
+          toast.error('No show available.')
         }
       })
-      .catch(() => {
-        toast.error('Could not fetch show details.')
-      })
+      .catch(() => toast.error('Show fetch failed'))
   }, [bookingInfo])
 
-  const subtotal = bookingInfo ? (bookingInfo.qty * (bookingInfo.total / bookingInfo.qty)) : 0
-  const tax      = Math.round((bookingInfo?.total || 0) * 0.05)
-  const total    = (bookingInfo?.total || 0) + tax - discount
+  // ── Calculation (FIXED) ────────────────────────────────
+  const baseTotal = bookingInfo?.total || 0
+  const tax = Math.round(baseTotal * 0.05)
+  const total = baseTotal + tax - discount
 
+  // ── Coupon logic ──────────────────────────────────────
   const applyCoupon = () => {
     if (coupon.toUpperCase() === 'MUSEUM10') {
-      setDiscount(Math.round((bookingInfo?.total || 0) * 0.1))
-      toast.success('Coupon applied! 10% off 🎉')
+      const disc = Math.round(baseTotal * 0.1)
+      setDiscount(disc)
+      toast.success('10% discount applied 🎉')
     } else {
-      toast.error('Invalid coupon code')
+      toast.error('Invalid coupon')
     }
   }
 
+  // ── Payment Handler (FIXED) ───────────────────────────
   const handlePayment = async () => {
     if (!showId) {
-      toast.error('Show not loaded yet. Please wait.')
+      toast.error('Wait, loading show...')
       return
     }
+
     if (!bookingInfo) {
-      toast.error('Booking data missing. Please start again.')
+      toast.error('Booking missing')
       navigate('/')
       return
     }
@@ -72,13 +77,13 @@ export default function BookingSummary() {
     setLoading(true)
 
     try {
-      // Step 1 — Create booking in backend
+      // ✅ Create booking
       const bookingRes = await bookingsAPI.create({
-        show:           showId,
-        visitor_name:   bookingInfo.visitor_name  || 'Guest',
-        visitor_email:  bookingInfo.visitor_email || 'guest@museum.com',
-        visitor_phone:  bookingInfo.visitor_phone || '9999999999',
-        quantity_adult: bookingInfo.qty           || 1,
+        show: showId,
+        visitor_name: bookingInfo.visitor_name || 'Guest',
+        visitor_email: bookingInfo.visitor_email || 'guest@museum.com',
+        visitor_phone: bookingInfo.visitor_phone || '9999999999',
+        quantity_adult: bookingInfo.qty || 1,
         quantity_child: 0,
       })
 
@@ -86,60 +91,60 @@ export default function BookingSummary() {
         booking,
         razorpay_order_id,
         razorpay_key_id,
-        amount,
+        amount, // 🔥 IMPORTANT
       } = bookingRes.data
 
-      // Step 2 — Open Razorpay checkout
+      // ✅ Open Razorpay
       await openRazorpayCheckout({
-        orderId:      razorpay_order_id,
-        amount:       amount,
-        keyId:        razorpay_key_id,
-        bookingRef:   booking.booking_ref,
-        visitorName:  bookingInfo.visitor_name,
+        orderId: razorpay_order_id,
+        amount: amount, // ✅ backend amount
+        keyId: razorpay_key_id,
+        bookingRef: booking.booking_ref,
+        visitorName: bookingInfo.visitor_name,
         visitorEmail: bookingInfo.visitor_email || 'guest@museum.com',
         visitorPhone: bookingInfo.visitor_phone,
 
-        onSuccess: async (razorpayResponse) => {
+        onSuccess: async (res) => {
           try {
             await paymentAPI.verify({
-              razorpay_order_id:   razorpayResponse.razorpay_order_id,
-              razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-              razorpay_signature:  razorpayResponse.razorpay_signature,
+              razorpay_order_id: res.razorpay_order_id,
+              razorpay_payment_id: res.razorpay_payment_id,
+              razorpay_signature: res.razorpay_signature,
             })
-            // localStorage clear karo
+
             localStorage.removeItem('pendingBooking')
-            toast.success('Payment successful! 🎉')
+            toast.success('Payment successful 🎉')
             navigate(`/ticket/${booking.booking_ref}`)
+
           } catch {
-            toast.error('Payment verification failed. Contact support.')
+            toast.error('Verification failed')
           } finally {
             setLoading(false)
           }
         },
 
         onFailure: (msg) => {
-          toast.error(msg || 'Payment failed. Please try again.')
+          toast.error(msg || 'Payment failed')
           setLoading(false)
-        },
+        }
       })
 
     } catch (err) {
-      console.error('Booking error:', err.response?.data)
-      toast.error(err.response?.data?.error || 'Booking failed. Please try again.')
+      console.error(err)
+      toast.error(err.response?.data?.error || 'Booking failed')
       setLoading(false)
     }
   }
 
+  // ── Loading Screen ────────────────────────────────────
   if (!bookingInfo) {
     return (
-      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-dark-400 text-sm">Loading booking details...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-dark-950">
+        <Loader className="animate-spin text-white" />
       </div>
     )
   }
+
 
   return (
     <div className="min-h-screen bg-dark-950">
@@ -187,10 +192,10 @@ export default function BookingSummary() {
 
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: Calendar, label: 'Date',     value: bookingInfo.date     },
-                  { icon: Clock,    label: 'Time',     value: '10:00 AM'           },
-                  { icon: MapPin,   label: 'Venue',    value: 'Main Gallery'       },
-                  { icon: Users,    label: 'Visitors', value: `${bookingInfo.qty} ticket${bookingInfo.qty > 1 ? 's' : ''}` },
+                  { icon: Calendar, label: 'Date', value: bookingInfo.date },
+                  { icon: Clock, label: 'Time', value: '10:00 AM' },
+                  { icon: MapPin, label: 'Venue', value: 'Main Gallery' },
+                  { icon: Users, label: 'Visitors', value: `${bookingInfo.qty} ticket${bookingInfo.qty > 1 ? 's' : ''}` },
                 ].map(item => (
                   <div
                     key={item.label}
@@ -214,7 +219,7 @@ export default function BookingSummary() {
               <h3 className="text-white font-bold mb-4">Price Breakdown</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2"
-                     style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <div>
                     <p className="text-white text-sm font-medium">Tickets</p>
                     <p className="text-dark-500 text-xs">{bookingInfo.qty} × ₹{bookingInfo.total / bookingInfo.qty}</p>
@@ -222,13 +227,13 @@ export default function BookingSummary() {
                   <p className="text-white font-bold">₹{bookingInfo.total}</p>
                 </div>
                 <div className="flex items-center justify-between py-2"
-                     style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <p className="text-dark-400 text-sm">GST (5%)</p>
                   <p className="text-dark-400 font-medium">₹{tax}</p>
                 </div>
                 {discount > 0 && (
                   <div className="flex items-center justify-between py-2"
-                       style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <p className="text-green-400 text-sm">Coupon Discount</p>
                     <p className="text-green-400 font-bold">-₹{discount}</p>
                   </div>
@@ -284,6 +289,7 @@ export default function BookingSummary() {
                 </div>
 
                 {/* Visitor Info */}
+                {/* Visitor Info */}
                 <div
                   className="rounded-2xl p-4 mb-5"
                   style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -291,6 +297,9 @@ export default function BookingSummary() {
                   <p className="text-dark-400 text-xs mb-2 font-semibold uppercase tracking-wider">Visitor Details</p>
                   <p className="text-white text-sm font-bold">{bookingInfo.visitor_name}</p>
                   <p className="text-dark-400 text-xs">{bookingInfo.visitor_phone}</p>
+                  {bookingInfo.visitor_email && bookingInfo.visitor_email !== 'guest@museum.com' && (
+                    <p className="text-dark-400 text-xs">{bookingInfo.visitor_email}</p>
+                  )}
                 </div>
 
                 <p className="text-dark-400 text-xs font-semibold uppercase tracking-wider mb-3">
