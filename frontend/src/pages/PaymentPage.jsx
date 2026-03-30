@@ -3,6 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Shield, Lock, CreditCard, Smartphone, Building2, CheckCircle } from 'lucide-react'
 import Navbar from '../components/common/Navbar'
+import { useEffect } from 'react'
+
+
 
 const AMOUNT = 375
 
@@ -34,11 +37,23 @@ const METHODS = [
 ]
 
 export default function PaymentPage() {
+
+  
+ 
   const [selected, setSelected] = useState('upi')
   const [upiId, setUpiId]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [paid, setPaid]         = useState(false)
   const navigate                = useNavigate()
+  // PaymentPage.jsx — Ab redirect page hai
+
+
+
+  
+  useEffect(() => { navigate('/booking/summary') }, [])
+ 
+
+  
 
   const handlePay = () => {
     setLoading(true)
