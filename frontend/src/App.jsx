@@ -15,6 +15,10 @@ import AdminBookings  from './pages/admin/AdminBookings.jsx'
 import AdminShows     from './pages/admin/AdminShows.jsx'
 import AdminRevenue   from './pages/admin/AdminRevenue.jsx'
 import AdminLayout    from './pages/admin/AdminLayout.jsx'
+import Profile from './pages/Profile'
+
+
+
 
 
 
@@ -44,6 +48,7 @@ export default function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/booking/summary" element={<BookingSummary />} />
+        <Route path="/profile" element={<Profile />} />
 
 
         <Route path="/admin" element={<AdminLayout />}>

@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Ticket, LayoutDashboard, BookOpen, LogIn, LogOut, User } from 'lucide-react'
+import { Menu, X, Ticket, BookOpen, LogIn, LogOut, User } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { logoutUser } from '../../redux/slices/authSlice'
 import toast from 'react-hot-toast'
 
-const NAV_LINKS = [
-  { to: '/',            label: 'Home',      icon: null            },
-  { to: '/my-bookings', label: 'Bookings',  icon: BookOpen        },
-  { to: '/admin',       label: 'Dashboard', icon: LayoutDashboard },
+// ── Admin emails — AdminLayout se same rakhna ──────────────────────────────
+const ADMIN_EMAILS = [
+  'admin@museum.com',
+  'mdangmuseum@gmail.com',   // ← Apna email daalo
+  'superadmin@museum.com',
+]
+
+// ── Public nav links — Dashboard NAHI hai ─────────────────────────────────
+const PUBLIC_LINKS = [
+  { to: '/',            label: 'Home',      icon: null     },
+  { to: '/my-bookings', label: 'Bookings',  icon: BookOpen },
 ]
 
 export default function Navbar() {
@@ -18,11 +25,24 @@ export default function Navbar() {
   const dispatch             = useDispatch()
   const { isLoggedIn, user } = useSelector(s => s.auth)
 
+  // Check if current user is admin
+  const isAdmin = ADMIN_EMAILS.map(e => e.toLowerCase())
+    .includes(user?.email?.toLowerCase())
+
   const handleLogout = async () => {
     await dispatch(logoutUser())
     toast.success('Logged out successfully!')
     navigate('/')
   }
+
+  // Nav links — admin ko extra link dikhao
+  const navLinks = [
+    ...PUBLIC_LINKS,
+    ...(isLoggedIn && isAdmin
+      ? [{ to: '/admin', label: 'Admin Panel', icon: null }]
+      : []
+    ),
+  ]
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
@@ -43,12 +63,12 @@ export default function Navbar() {
 
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map(link => (
+          {navLinks.map(link => (
             <Link
               key={link.to}
               to={link.to}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2
-                ${pathname === link.to
+                ${pathname === link.to || pathname.startsWith(link.to + '/') && link.to !== '/'
                   ? 'bg-brand-600/20 text-brand-400 border border-brand-500/20'
                   : 'text-dark-300 hover:text-white hover:bg-white/5'
                 }`}
@@ -59,19 +79,27 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Right side — Login ya User Info */}
+        {/* Right side */}
         <div className="hidden md:flex items-center gap-3">
           {isLoggedIn ? (
             <>
-              {/* User name */}
-              <div className="flex items-center gap-2 glass-light px-3 py-2 rounded-xl border border-white/8">
+              {/* Profile Link */}
+              <Link
+                to="/profile"
+                className={`flex items-center gap-2 glass-light px-3 py-2 rounded-xl border transition-all hover:border-brand-500/30 ${
+                  pathname === '/profile'
+                    ? 'border-brand-500/30 bg-brand-500/10'
+                    : 'border-white/8'
+                }`}
+              >
                 <div className="w-7 h-7 btn-primary rounded-lg flex items-center justify-center text-white text-xs font-black">
                   {user?.full_name?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <span className="text-white text-sm font-medium">
                   {user?.full_name?.split(' ')[0] || 'User'}
                 </span>
-              </div>
+                <User size={13} className="text-dark-400" />
+              </Link>
 
               {/* Logout */}
               <button
@@ -105,7 +133,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {open && (
         <div className="relative md:hidden glass border-b border-white/5 px-6 py-4 flex flex-col gap-2 animate-fade-in">
-          {NAV_LINKS.map(link => (
+          {navLinks.map(link => (
             <Link
               key={link.to}
               to={link.to}
@@ -121,15 +149,29 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Mobile Login/Logout */}
+          {/* Mobile Profile + Logout */}
           {isLoggedIn ? (
-            <button
-              onClick={() => { handleLogout(); setOpen(false) }}
-              className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 text-red-400 hover:bg-red-500/10 transition-all"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
+            <>
+              <Link
+                to="/profile"
+                onClick={() => setOpen(false)}
+                className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${
+                  pathname === '/profile'
+                    ? 'bg-brand-600/20 text-brand-400'
+                    : 'text-dark-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <User size={16} />
+                My Profile
+              </Link>
+              <button
+                onClick={() => { handleLogout(); setOpen(false) }}
+                className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 text-red-400 hover:bg-red-500/10 transition-all"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </>
           ) : (
             <Link
               to="/login"

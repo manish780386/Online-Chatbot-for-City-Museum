@@ -58,3 +58,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin(self):
         return self.role in ('admin', 'superadmin')
+    
+# Existing User model ke baad add karo
+class Feedback(models.Model):
+    RATING_CHOICES = [(i, i) for i in range(1, 6)]
+
+    id         = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name       = models.CharField(max_length=200)
+    email      = models.EmailField(blank=True)
+    rating     = models.IntegerField(choices=RATING_CHOICES, default=5)
+    message    = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'feedback'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} — {self.rating}★'

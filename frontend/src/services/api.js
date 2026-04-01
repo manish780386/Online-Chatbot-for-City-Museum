@@ -83,4 +83,16 @@ export const analyticsAPI = {
   get: () => api.get('/auth/analytics/'),
 }
 
+// Feedback API
+export const feedbackAPI = {
+  submit: data => api.post('/auth/feedback/', data),
+  getAll: ()   => api.get('/auth/feedback/list/'),
+}
+
+// Profile API
+export const profileAPI = {
+  get:    ()   => api.get('/auth/profile/'),
+  update: data => api.patch('/auth/profile/', data),
+}
+
 export default api
