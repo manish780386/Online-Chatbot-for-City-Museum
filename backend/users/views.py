@@ -80,34 +80,57 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email    = request.data.get('email')
-        password = request.data.get('password')
+        email    = request.data.get('email', '').strip()
+        password = request.data.get('password', '').strip()
 
         if not email or not password:
             return Response(
-                {'error': 'Email and password required'},
+                {'error': 'Email aur password required hai'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = authenticate(request, email=email, password=password)
+        User = get_user_model()
 
-        if not user:
+        # Email ya phone se dhundho
+        user = None
+        try:
+            if '@' in email:
+                user = User.objects.get(email=email)
+            else:
+                phone = email.replace(' ', '').replace('+91', '').replace('91', '')
+                user  = User.objects.get(phone=phone)
+        except User.DoesNotExist:
             return Response(
-                {'error': 'Invalid credentials'},
+                {'error': 'User not found. Please register first.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not user.check_password(password):
+            return Response(
+                {'error': 'Wrong password. Please try again.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
         if not user.is_active:
             return Response(
-                {'error': 'Account is deactivated'},
+                {'error': 'Account deactivated. Contact support.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         refresh = RefreshToken.for_user(user)
+
         return Response({
-            'user':          UserSerializer(user).data,
-            'access_token':  str(refresh.access_token),
-            'refresh_token': str(refresh),
+            # ── Dono format mein bhejo — frontend safe ─────────────────
+            'access':        str(refresh.access_token),
+            'refresh':       str(refresh),
+            'access_token':  str(refresh.access_token),   # ← legacy
+            'refresh_token': str(refresh),                 # ← legacy
+            'user': {
+                'id':        str(user.id),
+                'email':     user.email,
+                'full_name': getattr(user, 'full_name', '') or '',
+                'phone':     getattr(user, 'phone', '') or '',
+            }
         })
 
 

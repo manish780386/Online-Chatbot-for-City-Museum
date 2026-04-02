@@ -1,61 +1,78 @@
 import axios from 'axios'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
-
-// ── Request interceptor — JWT token add karo ──────────────────────────
+// ── Request interceptor — token attach karo ────────────────────────────────
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('accessToken')
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   error => Promise.reject(error)
 )
 
-// ── Response interceptor — 401 pe auto logout ─────────────────────────
+// ── Response interceptor — 401 pe token refresh karo ──────────────────────
 api.interceptors.response.use(
   response => response,
   async error => {
-    const original = error.config
+    const originalRequest = error.config
 
-    // Access token expire — refresh karo
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/login/') &&
+      !originalRequest.url?.includes('/auth/token/refresh/')
+    ) {
+      originalRequest._retry = true
+
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (!refreshToken) {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        return Promise.reject(error)
+      }
+
       try {
-        const refresh = localStorage.getItem('refreshToken')
-        if (refresh) {
-          const res = await axios.post(
-            'http://localhost:8000/api/v1/auth/refresh/',
-            { refresh }
-          )
-          const newToken = res.data.access
-          localStorage.setItem('accessToken', newToken)
-          original.headers.Authorization = `Bearer ${newToken}`
-          return api(original)
-        }
+        const res = await axios.post(`${BASE_URL}/auth/token/refresh/`, {
+          refresh: refreshToken
+        })
+
+        const newAccess = res.data.access
+        localStorage.setItem('accessToken', newAccess)
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`
+        return api(originalRequest)
+
       } catch {
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
-        window.location.href = '/login'
+        return Promise.reject(error)
       }
     }
+
     return Promise.reject(error)
   }
 )
 
-// ── Auth APIs ─────────────────────────────────────────────────────────
+export default api
+
+// ── Auth API ───────────────────────────────────────────────────────────────
 export const authAPI = {
-  register: data  => api.post('/auth/register/', data),
-  login:    data  => api.post('/auth/login/',    data),
-  logout:   data  => api.post('/auth/logout/',   data),
-  profile:  ()    => api.get('/auth/profile/'),
+  register: data => api.post('/auth/register/', data),
+  login:    data => api.post('/auth/login/',    data),
+  logout:   data => api.post('/auth/logout/',   data),
+  profile:  ()   => api.get('/auth/profile/'),
+  analytics:()   => api.get('/auth/analytics/'),
 }
 
-// ── Shows APIs ────────────────────────────────────────────────────────
+// ── Shows API ──────────────────────────────────────────────────────────────
 export const showsAPI = {
   getAll:  params     => api.get('/shows/',         { params }),
   getById: id         => api.get(`/shows/${id}/`),
@@ -64,35 +81,33 @@ export const showsAPI = {
   delete:  id         => api.delete(`/shows/${id}/`),
 }
 
-// ── Bookings APIs ─────────────────────────────────────────────────────
+// ── Bookings API ───────────────────────────────────────────────────────────
 export const bookingsAPI = {
-  create:   data => api.post('/bookings/',              data),
+  create:   data => api.post('/bookings/',          data),
   getMyAll: ()   => api.get('/bookings/my/'),
   getByRef: ref  => api.get(`/bookings/${ref}/`),
   cancel:   ref  => api.delete(`/bookings/${ref}/cancel/`),
 }
 
-// ── Payment APIs ──────────────────────────────────────────────────────
+// ── Payment API ────────────────────────────────────────────────────────────
 export const paymentAPI = {
-  verify: data => api.post('/payments/verify/', data),
-  refund: data => api.post('/payments/refund/', data),
+  verify:  data => api.post('/payments/verify/',  data),
+  webhook: data => api.post('/payments/webhook/', data),
+  refund:  data => api.post('/payments/refund/',  data),
 }
 
-// ── Analytics API ─────────────────────────────────────────────────────
-export const analyticsAPI = {
-  get: () => api.get('/auth/analytics/'),
-}
-
-// Feedback API
+// ── Feedback API ───────────────────────────────────────────────────────────
 export const feedbackAPI = {
-  submit: data => api.post('/auth/feedback/', data),
+  submit: data => api.post('/auth/feedback/',      data),
   getAll: ()   => api.get('/auth/feedback/list/'),
 }
 
-// Profile API
+// ── Profile API ────────────────────────────────────────────────────────────
 export const profileAPI = {
   get:    ()   => api.get('/auth/profile/'),
   update: data => api.patch('/auth/profile/', data),
 }
-
-export default api
+// ── Analytics API ─────────────────────────────────────────────────────────
+export const analyticsAPI = {
+  get: () => api.get('/auth/analytics/'),
+}

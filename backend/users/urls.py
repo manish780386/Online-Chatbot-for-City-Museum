@@ -1,13 +1,14 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 urlpatterns = [
-    path('register/',  views.RegisterView.as_view(),  name='register'),
-    path('login/',     views.LoginView.as_view(),     name='login'),
-    path('logout/',    views.LogoutView.as_view(),    name='logout'),
-    path('profile/',   views.profile_view,            name='profile'),
-    path('analytics/', views.analytics_view,          name='analytics'),
-    path('feedback/',  views.submit_feedback,         name='submit-feedback'),
-    path('feedback/list/', views.get_feedback,        name='get-feedback'),
-    
+    path('register/',       views.RegisterView.as_view(),  name='register'),
+    path('login/',          views.LoginView.as_view(),     name='login'),
+    path('logout/',         views.LogoutView.as_view(),    name='logout'),
+    path('profile/',        views.profile_view,            name='profile'),
+    path('analytics/',      views.analytics_view,          name='analytics'),
+    path('feedback/',       views.submit_feedback,         name='feedback'),
+    path('feedback/list/',  views.get_feedback,            name='feedback-list'),
+    path('token/refresh/',  TokenRefreshView.as_view(),    name='token-refresh'),  # ← Add
 ]

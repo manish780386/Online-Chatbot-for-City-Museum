@@ -44,49 +44,49 @@ const STATIC_SHOWS = [
 const formatShow = (show, i) => {
   const styles = STATIC_SHOWS[i % 4]
   return {
-    id:       show.id,
-    emoji:    styles.emoji,
-    title:    show.name,
+    id: show.id,
+    emoji: styles.emoji,
+    title: show.name,
     category: show.get_category_display || show.category,
-    price:    Number(show.price_adult),
-    timing:   `${show.start_time?.slice(0,5)} – ${show.end_time?.slice(0,5)}`,
-    seats:    show.available_seats,
+    price: Number(show.price_adult),
+    timing: `${show.start_time?.slice(0, 5)} – ${show.end_time?.slice(0, 5)}`,
+    seats: show.available_seats,
     gradient: styles.gradient,
-    border:   styles.border,
-    glow:     styles.glow,
-    tag:      styles.tag,
+    border: styles.border,
+    glow: styles.glow,
+    tag: styles.tag,
     tagColor: styles.tagColor,
   }
 }
 
 const STATS = [
-  { value: '50K+',   label: 'Monthly Visitors', icon: Users },
-  { value: '4.9★',   label: 'Average Rating',   icon: Star  },
-  { value: '< 2min', label: 'Booking Time',      icon: Zap   },
-  { value: '24/7',   label: 'Always Open',       icon: Clock },
+  { value: '50K+', label: 'Monthly Visitors', icon: Users },
+  { value: '4.9★', label: 'Average Rating', icon: Star },
+  { value: '< 2min', label: 'Booking Time', icon: Zap },
+  { value: '24/7', label: 'Always Open', icon: Clock },
 ]
 
 const STEPS = [
-  { n: '01', icon: '💬', title: 'Open Chatbot',  desc: 'Click the floating chat button on the bottom right.' },
-  { n: '02', icon: '🎫', title: 'Choose Show',   desc: 'Tell the bot which show, date, and how many tickets.' },
-  { n: '03', icon: '💳', title: 'Pay Securely',  desc: 'Pay via UPI, card or netbanking — powered by Razorpay.' },
+  { n: '01', icon: '💬', title: 'Open Chatbot', desc: 'Click the floating chat button on the bottom right.' },
+  { n: '02', icon: '🎫', title: 'Choose Show', desc: 'Tell the bot which show, date, and how many tickets.' },
+  { n: '03', icon: '💳', title: 'Pay Securely', desc: 'Pay via UPI, card or netbanking — powered by Razorpay.' },
   { n: '04', icon: '📱', title: 'Get QR Ticket', desc: 'Instant QR ticket on your email and phone.' },
 ]
 
 const fadeUp = {
-  hidden:  { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 }
 const stagger = { visible: { transition: { staggerChildren: 0.12 } } }
 
 export default function Home() {
-  const [hovered,      setHovered]      = useState(null)
-  const [shows,        setShows]        = useState(STATIC_SHOWS)
+  const [hovered, setHovered] = useState(null)
+  const [shows, setShows] = useState(STATIC_SHOWS)
   const [loadingShows, setLoadingShows] = useState(true)
-  const [feedbacks,    setFeedbacks]    = useState([])
-  const [fbForm,       setFbForm]       = useState({ name: '', email: '', rating: 5, message: '' })
-  const [fbLoading,    setFbLoading]    = useState(false)
-  const [hoveredStar,  setHoveredStar]  = useState(0)
+  const [feedbacks, setFeedbacks] = useState([])
+  const [fbForm, setFbForm] = useState({ name: '', email: '', rating: 5, message: '' })
+  const [fbLoading, setFbLoading] = useState(false)
+  const [hoveredStar, setHoveredStar] = useState(0)
 
   useEffect(() => {
     showsAPI.getAll()
@@ -99,7 +99,7 @@ export default function Home() {
 
     feedbackAPI.getAll()
       .then(res => setFeedbacks(res.data || []))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const handleFeedbackSubmit = async () => {
@@ -203,43 +203,113 @@ export default function Home() {
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {loadingShows
-            ? [1,2,3,4].map(i => (
-                <div key={i} className="glass rounded-3xl p-6 border border-white/5 animate-pulse">
-                  <div className="w-12 h-12 shimmer-bg rounded-2xl mb-5" />
-                  <div className="h-3 shimmer-bg rounded-full w-1/3 mb-2" />
-                  <div className="h-5 shimmer-bg rounded-full w-2/3 mb-2" />
-                  <div className="h-10 shimmer-bg rounded-xl" />
-                </div>
-              ))
+            ? [1, 2, 3, 4].map(i => (
+              <div key={i} className="glass rounded-3xl p-6 border border-white/5 animate-pulse">
+                <div className="w-12 h-12 shimmer-bg rounded-2xl mb-5" />
+                <div className="h-3 shimmer-bg rounded-full w-1/3 mb-2" />
+                <div className="h-5 shimmer-bg rounded-full w-2/3 mb-2" />
+                <div className="h-10 shimmer-bg rounded-xl" />
+              </div>
+            ))
             : shows.map(show => (
-                <motion.div key={show.id} variants={fadeUp}
-                  onMouseEnter={() => setHovered(show.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  className={`relative glass rounded-3xl p-6 border ${show.border} cursor-pointer transition-all duration-500 ${hovered === show.id ? 'scale-105 shadow-card' : 'scale-100'}`}
-                  style={{ background: hovered === show.id ? `linear-gradient(145deg, ${show.glow}, rgba(255,255,255,0.02))` : undefined }}>
-                  <span className={`absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded-full border ${show.tagColor}`}>{show.tag}</span>
-                  <div className="text-5xl mb-5 animate-float" style={{ animationDelay: `${show.id * 0.5}s` }}>{show.emoji}</div>
-                  <p className="text-dark-400 text-xs font-semibold uppercase tracking-wider mb-1">{show.category}</p>
-                  <h3 className="text-white font-bold text-xl mb-1">{show.title}</h3>
-                  <p className="text-dark-500 text-xs mb-5 flex items-center gap-1"><Clock size={11} /> {show.timing}</p>
-                  <div className="flex items-end justify-between mb-5">
-                    <div>
-                      <p className="text-3xl font-black text-white">₹{show.price}</p>
-                      <p className="text-dark-500 text-xs">per ticket</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-green-400 text-sm font-bold">{show.seats}</p>
-                      <p className="text-dark-500 text-xs">seats left</p>
-                    </div>
+              <motion.div key={show.id} variants={fadeUp}
+                onMouseEnter={() => setHovered(show.id)}
+                onMouseLeave={() => setHovered(null)}
+                className={`relative glass rounded-3xl p-6 border ${show.border} cursor-pointer transition-all duration-500 ${hovered === show.id ? 'scale-105 shadow-card' : 'scale-100'}`}
+                style={{ background: hovered === show.id ? `linear-gradient(145deg, ${show.glow}, rgba(255,255,255,0.02))` : undefined }}>
+                <span className={`absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded-full border ${show.tagColor}`}>{show.tag}</span>
+                <div className="text-5xl mb-5 animate-float" style={{ animationDelay: `${show.id * 0.5}s` }}>{show.emoji}</div>
+                <p className="text-dark-400 text-xs font-semibold uppercase tracking-wider mb-1">{show.category}</p>
+                <h3 className="text-white font-bold text-xl mb-1">{show.title}</h3>
+                <p className="text-dark-500 text-xs mb-5 flex items-center gap-1"><Clock size={11} /> {show.timing}</p>
+                <div className="flex items-end justify-between mb-5">
+                  <div>
+                    <p className="text-3xl font-black text-white">₹{show.price}</p>
+                    <p className="text-dark-500 text-xs">per ticket</p>
                   </div>
-                  <button
-                    onClick={() => document.getElementById('chatbot-btn')?.click()}
-                    className="w-full btn-primary text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2">
-                    Book Now <ArrowRight size={14} />
-                  </button>
-                </motion.div>
-              ))
+                  <div className="text-right">
+                    <p className="text-green-400 text-sm font-bold">{show.seats}</p>
+                    <p className="text-dark-500 text-xs">seats left</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => document.getElementById('chatbot-btn')?.click()}
+                  className="w-full btn-primary text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2">
+                  Book Now <ArrowRight size={14} />
+                </button>
+              </motion.div>
+            ))
           }
+        </motion.div>
+      </section>
+
+      {/* ── OFFERS BANNER ── */}
+      <section className="max-w-7xl mx-auto px-6 py-8">
+        <motion.div
+          initial="hidden" whileInView="visible"
+          viewport={{ once: true }} variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          {[
+            {
+              emoji: '🎓', code: 'STUDENT15',
+              title: 'Student Discount',
+              desc: '15% off for students on all shows',
+              color: 'from-blue-500/20 to-indigo-500/10',
+              border: 'border-blue-500/25',
+              tag: 'Use Code',
+              tagColor: 'bg-blue-500/20 text-blue-400',
+            },
+            {
+              emoji: '👨‍👩‍👧‍👦', code: 'WELCOME20',
+              title: 'Family Welcome',
+              desc: '20% off on your first booking',
+              color: 'from-purple-500/20 to-pink-500/10',
+              border: 'border-purple-500/25',
+              tag: 'New Users',
+              tagColor: 'bg-purple-500/20 text-purple-400',
+            },
+            {
+              emoji: '🏛️', code: 'MUSEUM10',
+              title: 'Museum Special',
+              desc: '10% off on General & Exhibition',
+              color: 'from-amber-500/20 to-orange-500/10',
+              border: 'border-amber-500/25',
+              tag: 'All Users',
+              tagColor: 'bg-amber-500/20 text-amber-400',
+            },
+          ].map((offer, i) => (
+            <motion.div
+              key={i} variants={fadeUp}
+              className={`relative glass rounded-3xl p-5 border ${offer.border} overflow-hidden group cursor-pointer`}
+              style={{ background: `linear-gradient(135deg, ${offer.color.split(' ')[0].replace('from-', '').replace('/20', '')}, transparent)` }}
+              onClick={() => {
+                navigator.clipboard.writeText(offer.code)
+                toast.success(`Coupon "${offer.code}" copied! 🎉`)
+              }}
+            >
+              {/* Glow effect */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(circle at center, rgba(255,255,255,0.03), transparent)' }} />
+
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-3xl">{offer.emoji}</span>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${offer.tagColor}`}>
+                  {offer.tag}
+                </span>
+              </div>
+
+              <h3 className="text-white font-black text-lg mb-1">{offer.title}</h3>
+              <p className="text-dark-400 text-sm mb-4">{offer.desc}</p>
+
+              <div className="flex items-center justify-between">
+                <div className="glass-light rounded-xl px-4 py-2 border border-white/10">
+                  <p className="text-white font-mono font-black text-base tracking-widest">{offer.code}</p>
+                </div>
+                <span className="text-dark-500 text-xs">Click to copy →</span>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
       </section>
 
@@ -284,7 +354,7 @@ export default function Home() {
                 <motion.div key={fb.id} variants={fadeUp}
                   className="glass rounded-3xl p-6 border border-white/5 hover:border-brand-500/20 transition-all">
                   <div className="flex items-center gap-1 mb-3">
-                    {[1,2,3,4,5].map(star => (
+                    {[1, 2, 3, 4, 5].map(star => (
                       <span key={star} className={`text-lg ${star <= fb.rating ? 'text-yellow-400' : 'text-dark-700'}`}>★</span>
                     ))}
                   </div>
@@ -346,7 +416,7 @@ export default function Home() {
               <div>
                 <label className="text-dark-400 text-xs font-semibold uppercase tracking-wider mb-3 block">Rating *</label>
                 <div className="flex items-center gap-2">
-                  {[1,2,3,4,5].map(star => (
+                  {[1, 2, 3, 4, 5].map(star => (
                     <button
                       key={star}
                       onMouseEnter={() => setHoveredStar(star)}

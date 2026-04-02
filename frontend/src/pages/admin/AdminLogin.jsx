@@ -7,7 +7,7 @@ import api from '../../services/api'
 
 // ── Admin credentials — yahan apna email aur password daalo ───────────────
 const ADMIN_CREDENTIALS = [
-  { email: 'admin335@gmail.com',      password: 'Admin@1234'  },
+  { email: 'admin335@gmail.com',   password: 'Admin@1234'  },
  
 ]
 
