@@ -4,6 +4,7 @@ import { ArrowRight, Clock, Star, Users, Zap, ChevronDown, Ticket, Send } from '
 import Navbar from '../components/common/Navbar.jsx'
 import ChatbotWidget from '../components/chatbot/ChatbotWidget.jsx'
 import { showsAPI, feedbackAPI } from '../services/api'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 const STATIC_SHOWS = [
@@ -476,6 +477,9 @@ export default function Home() {
             <div>
               <p className="text-white font-bold text-sm">City Museum</p>
               <p className="text-dark-500 text-xs">AI-Powered Ticketing</p>
+            </div>
+            <div>
+              <Link to="/admin/login" className="text-dark-500 hover:text-white transition-colors">Admin Login</Link>
             </div>
           </div>
           <div className="flex items-center gap-6 text-dark-500 text-sm">
